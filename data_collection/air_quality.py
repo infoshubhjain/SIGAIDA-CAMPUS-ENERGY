@@ -13,10 +13,27 @@ key = os.getenv("OPENAQ_KEY")
 # the only sensor in Urbana-Champaign has ID 8706090
 
 client = OpenAQ(api_key=f"{key}")
-response = client.measurements.list(8706090,datetime_from='2025-10-16')
+
+all_results = []
+results = True
+page_num = 1
+# earlist possible datetime_from is 2024-01-04
+while results:
+    try:
+        response = client.measurements.list(8706090,datetime_from='2025-07-04',page=page_num)
+    except Exception as e:
+        print(e)  # results in http read time out - probably API throttling? Log the error but still save whatever data we got
+        break
+    data = response.dict()['results']
+    if len(data) == 0:
+        results = False
+    else:
+        all_results.extend(data)
+        page_num += 1
+
 client.close()
-data = response.dict()
-df = json_normalize(data['results'])  # value
+
+df = json_normalize(all_results)  # value
 
 # Open (or create) SQLite DB and insert data
 conn = sqlite3.connect("campus_data.db")
@@ -24,7 +41,7 @@ conn = sqlite3.connect("campus_data.db")
 df = df[['value', 'parameter.name', 'coverage.datetime_from.utc']]
 df.columns = ['value', 'parameter_name', 'datetime_utc']  # rename columns
 
-df.to_sql('air_quality', conn, if_exists='replace', index=False)  # save to database
+df.to_sql('air_quality_all', conn, if_exists='append', index=False)  # save to database
 
 conn.commit()
 conn.close()

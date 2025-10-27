@@ -35,18 +35,23 @@ columns = hourly_data.keys()
 rows = list(zip(*hourly_data.values()))  # transpose from lists of columns → list of rows
 
 # Create SQLite Table
-connection = sqlite3.connect("./data_collection/campus_data.db")
+connection = sqlite3.connect("campus_data.db")
 cursor = connection.cursor()
 
-# Create table dynamically based on variables
-col_defs = ", ".join([f'"{col}" REAL' if col != "time" else '"time" TEXT' for col in columns])
-cursor.execute(f"CREATE TABLE IF NOT EXISTS weather_data ({col_defs});")
-
-# Insert data into the table
+# Prepare insert statement (quote column names)
+quoted_cols = ", ".join([f'"{c}"' for c in columns])
 placeholders = ", ".join(["?"] * len(columns))
-cursor.executemany(
-    f"INSERT OR REPLACE INTO weather_data ({', '.join(columns)}) VALUES ({placeholders});",
-    rows
-)
+insert_sql = f"INSERT OR REPLACE INTO weather_data ({quoted_cols}) VALUES ({placeholders});"
+
+# Convert DataFrame rows to list of tuples for executemany
+param_rows = [tuple(row) for row in rows]
+
+# Insert rows in a transaction
+cursor.executemany(insert_sql, param_rows)
+connection.commit()
+
+# Clean up
+cursor.close()
+connection.close()
 
 
