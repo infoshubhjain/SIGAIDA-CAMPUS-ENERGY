@@ -29,7 +29,7 @@ params = {
 	"longitude": -88.2434,
 	"hourly": factors,
     "current": factors_current,
-	"start_date": "2013-01-01",
+	"start_date": "2022-08-03",
 	"end_date": "2025-11-06",
     "timezone": "America/Chicago",
 }
