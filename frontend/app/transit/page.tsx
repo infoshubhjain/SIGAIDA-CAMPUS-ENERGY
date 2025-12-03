@@ -17,7 +17,17 @@ export default function TransitPage() {
 
   useEffect(() => {
     // Dynamically import Leaflet
+    console.log('🚌 Loading Leaflet for transit map...');
     import('leaflet').then((leaflet) => {
+      console.log('✅ Leaflet loaded for transit map');
+      // Fix default icon paths for Leaflet in Next.js
+      delete (leaflet.Icon.Default.prototype as any)._getIconUrl;
+      leaflet.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      });
+
       setL(leaflet);
 
       // Import Leaflet CSS
@@ -26,7 +36,10 @@ export default function TransitPage() {
         link.rel = 'stylesheet';
         link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
         document.head.appendChild(link);
+        console.log('✅ Leaflet CSS loaded');
       }
+    }).catch((error) => {
+      console.error('❌ Failed to load Leaflet for transit map:', error);
     });
   }, []);
 
@@ -51,19 +64,58 @@ export default function TransitPage() {
   }, []);
 
   useEffect(() => {
-    if (!L || !mapRef.current || map) return;
+    if (!L) {
+      console.log('⏳ Waiting for Leaflet to load for transit...');
+      return;
+    }
+    if (!mapRef.current) {
+      console.log('⏳ Waiting for transit map container...', mapRef.current);
+      return;
+    }
+    if (map) {
+      console.log('✅ Transit map already initialized');
+      return;
+    }
 
-    // Initialize map
-    const newMap = L.map(mapRef.current).setView([40.1105, -88.2284], 14);
+    console.log('🗺️ Initializing transit map...', mapRef.current);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-    }).addTo(newMap);
+    // Add a small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      if (!mapRef.current) {
+        console.error('❌ Map ref still not available after delay');
+        return;
+      }
 
-    setMap(newMap);
+      try {
+        // Initialize map
+        const newMap = L.map(mapRef.current, {
+          preferCanvas: true,
+        }).setView([40.1105, -88.2284], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 19,
+        }).addTo(newMap);
+
+        setMap(newMap);
+        console.log('✅ Transit map initialized successfully');
+
+        // Force map to resize after initialization
+        setTimeout(() => {
+          newMap.invalidateSize();
+          console.log('✅ Transit map resized');
+        }, 100);
+      } catch (error) {
+        console.error('❌ Error initializing transit map:', error);
+      }
+    }, 50);
 
     return () => {
-      newMap.remove();
+      clearTimeout(timer);
+      if (map) {
+        console.log('🗑️ Cleaning up transit map');
+        map.remove();
+      }
     };
   }, [L, map]);
 
@@ -161,7 +213,33 @@ export default function TransitPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div ref={mapRef} className="w-full rounded-lg" style={{ height: '500px' }} />
+          <div className="relative" style={{ height: '500px', width: '100%' }}>
+            {!map && L && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-[999] rounded-lg">
+                <div className="text-center">
+                  <div className="spinner mb-2 mx-auto"></div>
+                  <p className="text-sm text-gray-500">Initializing map...</p>
+                </div>
+              </div>
+            )}
+            {!L && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-[999] rounded-lg">
+                <div className="text-center">
+                  <div className="spinner mb-2 mx-auto"></div>
+                  <p className="text-sm text-gray-500">Loading Leaflet...</p>
+                </div>
+              </div>
+            )}
+            <div
+              ref={mapRef}
+              id="transit-map"
+              className="w-full h-full rounded-lg"
+              style={{
+                minHeight: '500px',
+                visibility: map ? 'visible' : 'hidden'
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
 

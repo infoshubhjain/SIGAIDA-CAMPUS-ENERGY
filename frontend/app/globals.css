@@ -65,6 +65,26 @@
   z-index: 1;
 }
 
+/* Custom popup styles */
+.ndvi-popup .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ndvi-popup .leaflet-popup-content {
+  margin: 0;
+  min-width: 200px;
+}
+
+.ndvi-popup .leaflet-popup-close-button {
+  font-size: 20px;
+  padding: 4px 8px;
+}
+
+.leaflet-popup-tip-container {
+  display: none;
+}
+
 /* Loading spinner */
 .spinner {
   border: 4px solid #f3f3f3;

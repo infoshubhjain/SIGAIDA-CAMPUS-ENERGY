@@ -6,6 +6,12 @@ A comprehensive full-stack application for collecting, analyzing, and visualizin
 
 ![Project Banner](https://img.shields.io/badge/Status-Production%20Ready-brightgreen) ![Python](https://img.shields.io/badge/Python-3.11-blue) ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![FastAPI](https://img.shields.io/badge/FastAPI-0.109-green)
 
+## 🎯 Quick Start
+
+**Mac/Linux:** `./start.sh` | **Windows:** Double-click `start.bat`
+
+📖 [**See detailed instructions →**](HOW_TO_RUN.md)
+
 ---
 
 ## 📋 Table of Contents

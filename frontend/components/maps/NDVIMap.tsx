@@ -16,7 +16,17 @@ export function NDVIMap({ data, onCellClick }: NDVIMapProps) {
 
   useEffect(() => {
     // Dynamically import Leaflet (only client-side)
+    console.log('🗺️ Loading Leaflet library...');
     import('leaflet').then((leaflet) => {
+      console.log('✅ Leaflet loaded successfully');
+      // Fix default icon paths for Leaflet in Next.js
+      delete (leaflet.Icon.Default.prototype as any)._getIconUrl;
+      leaflet.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      });
+
       setL(leaflet);
 
       // Import Leaflet CSS
@@ -25,24 +35,66 @@ export function NDVIMap({ data, onCellClick }: NDVIMapProps) {
         link.rel = 'stylesheet';
         link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
         document.head.appendChild(link);
+        console.log('✅ Leaflet CSS loaded');
       }
+    }).catch((error) => {
+      console.error('❌ Failed to load Leaflet:', error);
     });
   }, []);
 
   useEffect(() => {
-    if (!L || !mapRef.current || map) return;
+    if (!L) {
+      console.log('⏳ Waiting for Leaflet to load...');
+      return;
+    }
+    if (!mapRef.current) {
+      console.log('⏳ Waiting for map container...', mapRef.current);
+      return;
+    }
+    if (map) {
+      console.log('✅ Map already initialized');
+      return;
+    }
 
-    // Initialize map
-    const newMap = L.map(mapRef.current).setView([40.1105, -88.2284], 14);
+    console.log('🗺️ Initializing NDVI map...', mapRef.current);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-    }).addTo(newMap);
+    // Add a small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      if (!mapRef.current) {
+        console.error('❌ Map ref still not available after delay');
+        return;
+      }
 
-    setMap(newMap);
+      try {
+        // Initialize map
+        const newMap = L.map(mapRef.current, {
+          preferCanvas: true,
+        }).setView([40.1105, -88.2284], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 19,
+        }).addTo(newMap);
+
+        setMap(newMap);
+        console.log('✅ NDVI map initialized successfully');
+
+        // Force map to resize after initialization
+        setTimeout(() => {
+          newMap.invalidateSize();
+          console.log('✅ Map resized');
+        }, 100);
+      } catch (error) {
+        console.error('❌ Error initializing NDVI map:', error);
+      }
+    }, 50);
 
     return () => {
-      newMap.remove();
+      clearTimeout(timer);
+      if (map) {
+        console.log('🗑️ Cleaning up NDVI map');
+        map.remove();
+      }
     };
   }, [L, map]);
 
@@ -50,9 +102,9 @@ export function NDVIMap({ data, onCellClick }: NDVIMapProps) {
     if (!map || !L || !data.length) return;
 
     try {
-      // Clear existing layers
+      // Clear existing rectangles (keep base tile layer)
       map.eachLayer((layer: any) => {
-        if (layer instanceof L.Rectangle) {
+        if (layer.options && layer.options.fillOpacity !== undefined && !layer._url) {
           map.removeLayer(layer);
         }
       });
@@ -74,16 +126,36 @@ export function NDVIMap({ data, onCellClick }: NDVIMapProps) {
         if (map && rectangle) {
           rectangle.addTo(map);
 
-          rectangle.bindPopup(`
-            <strong>NDVI: ${cell.ndvi.toFixed(3)}</strong><br/>
-            Lat: ${cell.lat.toFixed(4)}<br/>
-            Lon: ${cell.lon.toFixed(4)}<br/>
-            Date: ${cell.year}-${cell.month.toString().padStart(2, '0')}
-          `);
+          // Create popup with better styling and options
+          const popupContent = `
+            <div style="padding: 8px; min-width: 180px;">
+              <div style="font-size: 16px; font-weight: bold; color: #059669; margin-bottom: 8px;">
+                NDVI: ${cell.ndvi.toFixed(3)}
+              </div>
+              <div style="font-size: 13px; color: #666; line-height: 1.6;">
+                <strong>Location:</strong><br/>
+                Lat: ${cell.lat.toFixed(4)}<br/>
+                Lon: ${cell.lon.toFixed(4)}<br/>
+                <strong>Date:</strong> ${cell.year}-${cell.month.toString().padStart(2, '0')}
+              </div>
+            </div>
+          `;
 
-          if (onCellClick) {
-            rectangle.on('click', () => onCellClick(cell));
-          }
+          rectangle.bindPopup(popupContent, {
+            closeButton: true,
+            autoClose: false,
+            closeOnClick: false,
+            maxWidth: 300,
+            className: 'ndvi-popup'
+          });
+
+          // Handle click events
+          rectangle.on('click', () => {
+            rectangle.openPopup();
+            if (onCellClick) {
+              onCellClick(cell);
+            }
+          });
         }
       });
     } catch (error) {
@@ -92,8 +164,33 @@ export function NDVIMap({ data, onCellClick }: NDVIMapProps) {
   }, [map, L, data, onCellClick]);
 
   return (
-    <div className="relative w-full h-full">
-      <div ref={mapRef} className="w-full h-full rounded-lg" style={{ minHeight: '500px' }} />
+    <div className="relative w-full h-full" style={{ minHeight: '500px' }}>
+      {!map && L && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-[999] rounded-lg">
+          <div className="text-center">
+            <div className="spinner mb-2 mx-auto"></div>
+            <p className="text-sm text-gray-500">Initializing map...</p>
+          </div>
+        </div>
+      )}
+      {!L && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-[999] rounded-lg">
+          <div className="text-center">
+            <div className="spinner mb-2 mx-auto"></div>
+            <p className="text-sm text-gray-500">Loading Leaflet...</p>
+          </div>
+        </div>
+      )}
+      <div
+        ref={mapRef}
+        id="ndvi-map"
+        className="w-full h-full rounded-lg"
+        style={{
+          height: '100%',
+          minHeight: '500px',
+          visibility: map ? 'visible' : 'hidden'
+        }}
+      />
 
       {/* Legend */}
       <div className="absolute bottom-4 right-4 bg-white p-3 rounded-lg shadow-lg z-[1000]">
