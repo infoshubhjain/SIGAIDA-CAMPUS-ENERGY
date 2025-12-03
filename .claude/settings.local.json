@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(curl:*)",
-      "Bash(python -m uvicorn:*)"
+      "Bash(python -m uvicorn:*)",
+      "Bash(node --version)",
+      "Bash(npm:*)",
+      "Bash(pip3 install:*)",
+      "Bash(python3 -m uvicorn:*)",
+      "Bash(cd:*)",
+      "Bash(sudo chown:*)",
+      "Bash(cp:*)",
+      "Bash(sqlite3:*)",
+      "Bash(python3:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

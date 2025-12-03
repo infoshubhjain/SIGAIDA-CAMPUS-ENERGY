@@ -48,9 +48,10 @@ class DatabaseManager:
     # Air Quality Queries
 
     def get_current_air_quality(self) -> Dict[str, Any]:
-        """Get the most recent air quality data"""
+        """Get the most recent air quality data from historical records"""
         query = """
-        SELECT * FROM current_air_quality_data
+        SELECT *, date as time FROM historical_air_quality_data
+        ORDER BY date DESC
         LIMIT 1
         """
         results = self.execute_query(query)
@@ -78,8 +79,8 @@ class DatabaseManager:
     def get_openaq_data(self, hours: int = 24) -> List[Dict[str, Any]]:
         """Get recent OpenAQ sensor data (PM2.5)"""
         query = """
-        SELECT * FROM historical_aq_openaq
-        ORDER BY datetime DESC
+        SELECT value, parameter_name, datetime_utc as datetime FROM historical_aq_openaq
+        ORDER BY datetime_utc DESC
         LIMIT ?
         """
         return self.execute_query(query, (hours,))
@@ -169,7 +170,7 @@ class DatabaseManager:
 
         # Greenest areas
         greenest_query = """
-        SELECT lat, lon, ndvi
+        SELECT lat, lon, ndvi, year, month
         FROM vegetation_data
         WHERE (year, month) = (
             SELECT year, month FROM vegetation_data
@@ -229,17 +230,20 @@ class DatabaseManager:
         except Exception:
             ndvi_stats = {"statistics": {}, "greenest_areas": []}
 
-        # Recent trends (last 7 days air quality)
-        seven_days_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+        # Recent trends (average of most recent 168 records ~7 days of hourly data)
         recent_aq_query = """
         SELECT
             AVG(pm2_5) as avg_pm25,
             AVG(pm10) as avg_pm10,
             AVG(us_aqi) as avg_aqi
-        FROM historical_air_quality_data
-        WHERE date >= ?
+        FROM (
+            SELECT pm2_5, pm10, us_aqi
+            FROM historical_air_quality_data
+            ORDER BY date DESC
+            LIMIT 168
+        )
         """
-        recent_trends = self.execute_query(recent_aq_query, (seven_days_ago,))
+        recent_trends = self.execute_query(recent_aq_query)
 
         return {
             "current_air_quality": current_aq,

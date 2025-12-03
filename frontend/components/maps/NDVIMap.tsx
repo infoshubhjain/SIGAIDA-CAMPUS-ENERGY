@@ -49,38 +49,46 @@ export function NDVIMap({ data, onCellClick }: NDVIMapProps) {
   useEffect(() => {
     if (!map || !L || !data.length) return;
 
-    // Clear existing layers
-    map.eachLayer((layer: any) => {
-      if (layer instanceof L.Rectangle) {
-        map.removeLayer(layer);
-      }
-    });
+    try {
+      // Clear existing layers
+      map.eachLayer((layer: any) => {
+        if (layer instanceof L.Rectangle) {
+          map.removeLayer(layer);
+        }
+      });
 
-    // Add NDVI grid cells
-    data.forEach((cell) => {
-      const cellSize = 0.0009; // ~100m in degrees
-      const bounds: [[number, number], [number, number]] = [
-        [cell.lat - cellSize / 2, cell.lon - cellSize / 2],
-        [cell.lat + cellSize / 2, cell.lon + cellSize / 2],
-      ];
+      // Add NDVI grid cells
+      data.forEach((cell) => {
+        const cellSize = 0.0009; // ~100m in degrees
+        const bounds: [[number, number], [number, number]] = [
+          [cell.lat - cellSize / 2, cell.lon - cellSize / 2],
+          [cell.lat + cellSize / 2, cell.lon + cellSize / 2],
+        ];
 
-      const rectangle = L.rectangle(bounds, {
-        color: getNDVIColor(cell.ndvi),
-        weight: 0,
-        fillOpacity: 0.7,
-      }).addTo(map);
+        const rectangle = L.rectangle(bounds, {
+          color: getNDVIColor(cell.ndvi),
+          weight: 0,
+          fillOpacity: 0.7,
+        });
 
-      rectangle.bindPopup(`
-        <strong>NDVI: ${cell.ndvi.toFixed(3)}</strong><br/>
-        Lat: ${cell.lat.toFixed(4)}<br/>
-        Lon: ${cell.lon.toFixed(4)}<br/>
-        Date: ${cell.year}-${cell.month.toString().padStart(2, '0')}
-      `);
+        if (map && rectangle) {
+          rectangle.addTo(map);
 
-      if (onCellClick) {
-        rectangle.on('click', () => onCellClick(cell));
-      }
-    });
+          rectangle.bindPopup(`
+            <strong>NDVI: ${cell.ndvi.toFixed(3)}</strong><br/>
+            Lat: ${cell.lat.toFixed(4)}<br/>
+            Lon: ${cell.lon.toFixed(4)}<br/>
+            Date: ${cell.year}-${cell.month.toString().padStart(2, '0')}
+          `);
+
+          if (onCellClick) {
+            rectangle.on('click', () => onCellClick(cell));
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error rendering NDVI map:', error);
+    }
   }, [map, L, data, onCellClick]);
 
   return (

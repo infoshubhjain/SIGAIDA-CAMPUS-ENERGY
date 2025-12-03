@@ -324,6 +324,20 @@ async def get_air_quality_forecast(days: int = Query(7, ge=1, le=30, description
         raise HTTPException(status_code=500, detail=f"Error generating forecast: {str(e)}")
 
 
+@app.get("/api/ml/energy-prediction")
+async def get_energy_prediction(hours: int = Query(24, ge=1, le=168, description="Number of hours to forecast")):
+    """Get ML-based energy usage prediction"""
+    try:
+        from ml.predict import ml_predictor
+        predictions = ml_predictor.predict_energy_usage(hours)
+        return {
+            "predictions": predictions,
+            "hours": hours
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating energy prediction: {str(e)}")
+
+
 @app.get("/api/ml/anomalies")
 async def detect_anomalies(data_type: str = Query("air_quality", description="Type of data to analyze")):
     """Detect anomalies in environmental data (placeholder implementation)"""

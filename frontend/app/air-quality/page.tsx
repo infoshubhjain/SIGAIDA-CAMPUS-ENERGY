@@ -22,11 +22,14 @@ export default function AirQualityPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const { start, end } = getDateRange(dateRange);
+
+        // Fetch data without date filtering to get the most recent available data
+        // The limit will determine how many records to show based on dateRange
+        const limit = dateRange * 24; // Approximate hourly records
 
         const [current, historical, openaq] = await Promise.all([
           getCurrentAirQuality(),
-          getHistoricalAirQuality(start, end, 500),
+          getHistoricalAirQuality(undefined, undefined, limit),
           getOpenAQData(dateRange * 24),
         ]);
 
@@ -92,7 +95,7 @@ export default function AirQualityPage() {
           <CardContent>
             <div className="text-center">
               <div className="text-6xl font-bold text-gray-900 mb-2">
-                {currentAQ?.us_aqi || 'N/A'}
+                {currentAQ?.us_aqi ? currentAQ.us_aqi.toFixed(2) : 'N/A'}
               </div>
               {aqiInfo && (
                 <div>

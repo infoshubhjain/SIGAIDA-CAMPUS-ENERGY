@@ -70,30 +70,37 @@ export default function TransitPage() {
   useEffect(() => {
     if (!map || !L || !stops.length) return;
 
-    // Clear existing markers
-    map.eachLayer((layer: any) => {
-      if (layer instanceof L.Marker) {
-        map.removeLayer(layer);
-      }
-    });
+    try {
+      // Clear existing markers
+      map.eachLayer((layer: any) => {
+        if (layer instanceof L.Marker) {
+          map.removeLayer(layer);
+        }
+      });
 
-    // Custom icon for bus stops
-    const busIcon = L.divIcon({
-      className: 'custom-bus-icon',
-      html: '<div style="background-color: #3b82f6; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">🚌</div>',
-      iconSize: [24, 24],
-    });
+      // Custom icon for bus stops
+      const busIcon = L.divIcon({
+        className: 'custom-bus-icon',
+        html: '<div style="background-color: #3b82f6; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">🚌</div>',
+        iconSize: [24, 24],
+      });
 
-    // Add markers for each stop
-    stops.forEach((stop) => {
-      const marker = L.marker([stop.stop_lat, stop.stop_lon], { icon: busIcon }).addTo(map);
-      marker.bindPopup(`
-        <div style="padding: 4px;">
-          <strong>${stop.stop_name}</strong><br/>
-          <span style="font-size: 12px; color: #666;">ID: ${stop.stop_id}</span>
-        </div>
-      `);
-    });
+      // Add markers for each stop
+      stops.forEach((stop) => {
+        if (map) {
+          const marker = L.marker([stop.stop_lat, stop.stop_lon], { icon: busIcon });
+          marker.addTo(map);
+          marker.bindPopup(`
+            <div style="padding: 4px;">
+              <strong>${stop.stop_name}</strong><br/>
+              <span style="font-size: 12px; color: #666;">ID: ${stop.stop_id}</span>
+            </div>
+          `);
+        }
+      });
+    } catch (error) {
+      console.error('Error rendering transit map:', error);
+    }
   }, [map, L, stops]);
 
   if (loading) {
