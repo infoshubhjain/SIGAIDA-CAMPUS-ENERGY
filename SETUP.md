@@ -2,26 +2,37 @@
 
 This guide will help you get the SIGAIDA Campus Energy application running quickly.
 
-## ⚡ Super Quick Start (Windows)
+## ⚡ One-Click Start (Recommended)
 
-If you're on Windows, you can use the provided batch scripts:
+The easiest way to run the application - just double-click or run:
 
-### Option 1: Using Batch Scripts
+### For Mac/Linux:
+```bash
+./start.sh
+```
 
-1. **Start Backend** (Terminal 1):
-   ```bash
-   start-backend.bat
-   ```
+### For Windows:
+```bash
+start.bat
+```
+*Or simply double-click `start.bat` in Windows Explorer*
 
-2. **Start Frontend** (Terminal 2):
-   ```bash
-   start-frontend.bat
-   ```
+**What it does:**
+- ✅ Starts both backend and frontend servers automatically
+- ✅ Opens the application in your default browser
+- ✅ Handles port conflicts (kills existing processes)
+- ✅ Shows server logs in the terminal
 
-3. **Access Application**:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-   - API Docs: http://localhost:8000/api/docs
+**To stop everything:**
+```bash
+./stop.sh    # Mac/Linux
+stop.bat     # Windows
+```
+
+**Access Points:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/api/docs
 
 ---
 

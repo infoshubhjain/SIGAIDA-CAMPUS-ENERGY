@@ -117,14 +117,45 @@ A comprehensive full-stack application for collecting, analyzing, and visualizin
 
 ## 🚀 Quick Start
 
-### 1. Clone the Repository
+### ⚡ One-Click Startup (Recommended)
+
+The easiest way to run the application:
+
+**For Mac/Linux:**
+```bash
+./start.sh
+```
+
+**For Windows:**
+```bash
+start.bat
+```
+
+This will:
+- Start both backend and frontend servers
+- Automatically open the app in your browser
+- Handle port conflicts automatically
+
+To stop the servers:
+```bash
+./stop.sh    # Mac/Linux
+stop.bat     # Windows
+```
+
+---
+
+### 📝 Manual Setup
+
+If you prefer to run servers manually:
+
+#### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/yourusername/SIGAIDA-CAMPUS-ENERGY.git
 cd SIGAIDA-CAMPUS-ENERGY
 ```
 
-### 2. Backend Setup
+#### 2. Backend Setup
 
 ```bash
 # Navigate to backend directory
@@ -145,7 +176,7 @@ The backend API will be available at:
 - **API**: http://localhost:8000
 - **Interactive Docs**: http://localhost:8000/api/docs
 
-### 3. Frontend Setup
+#### 3. Frontend Setup
 
 ```bash
 # Navigate to frontend directory (from root)

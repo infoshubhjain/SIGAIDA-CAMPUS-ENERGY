@@ -12,7 +12,10 @@
       "Bash(cp:*)",
       "Bash(sqlite3:*)",
       "Bash(python3:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

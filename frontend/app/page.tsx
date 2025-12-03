@@ -72,7 +72,11 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard
           title="Air Quality Index"
-          value={summary?.current_air_quality?.us_aqi || 'N/A'}
+          value={
+            summary?.current_air_quality?.us_aqi
+              ? formatNumber(summary.current_air_quality.us_aqi, 2)
+              : 'N/A'
+          }
           subtitle={aqiInfo?.category || 'No data'}
           icon={Wind}
         />
