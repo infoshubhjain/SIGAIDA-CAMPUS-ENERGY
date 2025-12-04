@@ -1,6 +1,7 @@
 import openmeteo_requests
 import sqlite3
 import requests
+from datetime import datetime, timedelta
 
 import pandas as pd
 import requests_cache
@@ -15,13 +16,18 @@ openmeteo = openmeteo_requests.Client(session = retry_session)
 # Required weather variables are listed here and retrieved from OpenMeteo
 url = "https://archive-api.open-meteo.com/v1/archive"
 factors = ["weather_code", "temperature_2m_max", "temperature_2m_min", "apparent_temperature_max", "apparent_temperature_min",
-"precipitation_sum", "rain_sum", "snowfall_sum", "precipitation_hours", "sunrise", "sunset", "sunshine_duration", "daylight_duration", 
+"precipitation_sum", "rain_sum", "snowfall_sum", "precipitation_hours", "sunrise", "sunset", "sunshine_duration", "daylight_duration",
 "wind_speed_10m_max", "wind_gusts_10m_max", "wind_direction_10m_dominant", "shortwave_radiation_sum", "et0_fao_evapotranspiration"]
+
+# Calculate date range: from 1940-01-01 to today
+end_date = datetime.now().strftime("%Y-%m-%d")
+start_date = "1940-01-01"
+
 params = {
 	"latitude": 40.1164,
 	"longitude": -88.2434,
-	"start_date": "1940-01-01",
-	"end_date": "2025-10-30",
+	"start_date": start_date,
+	"end_date": end_date,
 	"daily": factors,
     "temperature_unit": "fahrenheit",
     "wind_speed_unit": "mph",

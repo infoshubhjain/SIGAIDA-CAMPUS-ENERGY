@@ -1,6 +1,6 @@
 import openmeteo_requests
 import sqlite3
-
+from datetime import datetime, timedelta
 
 import pandas as pd
 import requests_cache
@@ -24,13 +24,18 @@ factors_current = ["us_aqi", "pm10", "pm2_5", "carbon_monoxide", "nitrogen_dioxi
                    "dust", "uv_index", "uv_index_clear_sky", "ammonia"]
 
 url = "https://air-quality-api.open-meteo.com/v1/air-quality"
+
+# Calculate date range: from 2022-08-03 to today
+end_date = datetime.now().strftime("%Y-%m-%d")
+start_date = "2022-08-03"
+
 params = {
 	"latitude": 40.1164,
 	"longitude": -88.2434,
 	"hourly": factors,
     "current": factors_current,
-	"start_date": "2022-08-03",
-	"end_date": "2025-11-06",
+	"start_date": start_date,
+	"end_date": end_date,
     "timezone": "America/Chicago",
 }
 responses = openmeteo.weather_api(url, params=params)

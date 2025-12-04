@@ -21,9 +21,9 @@ params = {
     "hourly": hourly,
     "temperature_unit": "fahrenheit",
     "wind_speed_unit": "mph",
-    "preciptation_unit": "inch",
+    "precipitation_unit": "inch",
     "timezone": "America/Chicago",
-    "forcecast_days": 16
+    "forecast_days": 16
 }
 response = requests.get(meteo_url, params=params)
 response.raise_for_status()
@@ -38,10 +38,19 @@ rows = list(zip(*hourly_data.values()))  # transpose from lists of columns → l
 connection = sqlite3.connect("campus_data.db")
 cursor = connection.cursor()
 
-# Prepare insert statement (quote column names)
+# Drop existing table to ensure fresh forecast data
+cursor.execute("DROP TABLE IF EXISTS weather_forecast")
+connection.commit()
+
+# Create table with proper columns
 quoted_cols = ", ".join([f'"{c}"' for c in columns])
+create_sql = f"CREATE TABLE weather_forecast ({quoted_cols})"
+cursor.execute(create_sql)
+connection.commit()
+
+# Prepare insert statement (quote column names)
 placeholders = ", ".join(["?"] * len(columns))
-insert_sql = f"INSERT OR REPLACE INTO weather_forecast ({quoted_cols}) VALUES ({placeholders});"
+insert_sql = f"INSERT INTO weather_forecast ({quoted_cols}) VALUES ({placeholders});"
 
 # Convert DataFrame rows to list of tuples for executemany
 param_rows = [tuple(row) for row in rows]
