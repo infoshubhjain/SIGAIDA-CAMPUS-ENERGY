@@ -54,7 +54,7 @@ class MLPredictor:
 
             # Prepare features and targets
             feature_cols = ['hour', 'day_of_week', 'month']
-            target_cols = ['pm2_5', 'pm10', 'us_aqi']
+            target_cols = ['pm2_5', 'pm10', 'us_aqi', 'carbon_dioxide']
 
             # Remove rows with missing values
             df_clean = df[feature_cols + target_cols].dropna()
@@ -133,6 +133,7 @@ class MLPredictor:
                     "predicted_pm25": round(float(avg_pred[0]), 2),
                     "predicted_pm10": round(float(avg_pred[1]), 2),
                     "predicted_aqi": int(round(float(avg_pred[2]))),
+                    "predicted_co2": round(float(avg_pred[3]), 1),
                     "confidence": 0.85,  # Model confidence score
                     "model": "Random Forest",
                     "note": "Prediction based on trained ML model"
@@ -154,8 +155,9 @@ class MLPredictor:
                 avg_pm25 = df['pm2_5'].mean() if 'pm2_5' in df else 5.0
                 avg_pm10 = df['pm10'].mean() if 'pm10' in df else 8.0
                 avg_aqi = df['us_aqi'].mean() if 'us_aqi' in df else 30.0
+                avg_co2 = df['carbon_dioxide'].mean() if 'carbon_dioxide' in df else 447.0
             else:
-                avg_pm25, avg_pm10, avg_aqi = 5.0, 8.0, 30.0
+                avg_pm25, avg_pm10, avg_aqi, avg_co2 = 5.0, 8.0, 30.0, 447.0
 
             predictions = []
             base_date = datetime.now()
@@ -170,6 +172,7 @@ class MLPredictor:
                     "predicted_pm25": round(avg_pm25 * (1 + variation), 2),
                     "predicted_pm10": round(avg_pm10 * (1 + variation), 2),
                     "predicted_aqi": int(round(avg_aqi * (1 + variation))),
+                    "predicted_co2": round(avg_co2 * (1 + variation), 1),
                     "confidence": 0.70,
                     "model": "Historical Average",
                     "note": "Prediction based on recent historical averages"
@@ -183,6 +186,7 @@ class MLPredictor:
                 "predicted_pm25": 5.0,
                 "predicted_pm10": 8.0,
                 "predicted_aqi": 30,
+                "predicted_co2": 447.0,
                 "confidence": 0.50,
                 "model": "Baseline",
                 "note": "Default baseline prediction"
@@ -261,24 +265,31 @@ class MLPredictor:
         """
         try:
             if data_type == "air_quality":
-                # Get recent data
-                recent_data = db.get_historical_air_quality(limit=500)
+                # Get historical data for training (excluding recent 48 hours)
+                all_data = db.get_historical_air_quality(limit=1000)
 
-                if not recent_data:
+                if not all_data or len(all_data) < 100:
                     return self._empty_anomaly_result(data_type)
 
-                df = pd.DataFrame(recent_data)
+                df = pd.DataFrame(all_data)
 
-                # Check if we have the anomaly detector trained
-                if self.anomaly_detector is None:
-                    # Train on the fly
-                    features = df[['pm2_5', 'pm10', 'us_aqi', 'ozone']].dropna()
-                    if len(features) >= 50:
-                        self.anomaly_detector = IsolationForest(contamination=0.1, random_state=42)
-                        self.anomaly_detector.fit(features.values)
+                # Split data: train on older data, test on recent 48 hours
+                training_data = df.iloc[48:]  # Skip first 48 (most recent)
+                recent = df.head(48)  # Test on most recent 48 hours
+
+                # Train anomaly detector on historical data (not recent)
+                if self.anomaly_detector is None or True:  # Retrain each time for fresh detection
+                    training_features = training_data[['pm2_5', 'pm10', 'us_aqi', 'ozone']].dropna()
+                    if len(training_features) >= 50:
+                        # Use contamination=0.05 (expect 5% anomalies, more sensitive)
+                        self.anomaly_detector = IsolationForest(
+                            contamination=0.05,
+                            random_state=42,
+                            n_estimators=100
+                        )
+                        self.anomaly_detector.fit(training_features.values)
 
                 # Detect anomalies in recent data (last 48 hours)
-                recent = df.head(48)
                 features = recent[['pm2_5', 'pm10', 'us_aqi', 'ozone']].dropna()
 
                 if len(features) == 0 or self.anomaly_detector is None:
@@ -286,6 +297,15 @@ class MLPredictor:
 
                 predictions = self.anomaly_detector.predict(features.values)
                 scores = self.anomaly_detector.score_samples(features.values)
+
+                # Calculate expected ranges from training data
+                training_features = training_data[['pm2_5', 'pm10', 'us_aqi', 'ozone']].dropna()
+                expected_ranges = {
+                    'pm2_5': [training_features['pm2_5'].quantile(0.05), training_features['pm2_5'].quantile(0.95)],
+                    'pm10': [training_features['pm10'].quantile(0.05), training_features['pm10'].quantile(0.95)],
+                    'us_aqi': [training_features['us_aqi'].quantile(0.05), training_features['us_aqi'].quantile(0.95)],
+                    'ozone': [training_features['ozone'].quantile(0.05), training_features['ozone'].quantile(0.95)]
+                }
 
                 # Find anomalies (prediction = -1)
                 anomalies = []
@@ -295,26 +315,49 @@ class MLPredictor:
                         row = recent.loc[data_idx]
 
                         # Determine severity based on score
-                        if score < -0.5:
+                        if score < -0.6:
                             severity = "high"
-                        elif score < -0.3:
+                        elif score < -0.5:
                             severity = "medium"
                         else:
                             severity = "low"
+
+                        # Find which metric is most anomalous
+                        pm25_val = float(row['pm2_5'])
+                        pm10_val = float(row['pm10'])
+                        aqi_val = float(row['us_aqi'])
+                        ozone_val = float(row['ozone'])
+
+                        anomalous_metrics = []
+                        if pm25_val < expected_ranges['pm2_5'][0] or pm25_val > expected_ranges['pm2_5'][1]:
+                            anomalous_metrics.append(f"PM2.5 ({pm25_val:.1f})")
+                        if pm10_val < expected_ranges['pm10'][0] or pm10_val > expected_ranges['pm10'][1]:
+                            anomalous_metrics.append(f"PM10 ({pm10_val:.1f})")
+                        if aqi_val < expected_ranges['us_aqi'][0] or aqi_val > expected_ranges['us_aqi'][1]:
+                            anomalous_metrics.append(f"AQI ({aqi_val:.0f})")
+                        if ozone_val < expected_ranges['ozone'][0] or ozone_val > expected_ranges['ozone'][1]:
+                            anomalous_metrics.append(f"Ozone ({ozone_val:.0f})")
+
+                        description = f"Unusual {data_type} pattern"
+                        if anomalous_metrics:
+                            description += f": {', '.join(anomalous_metrics)}"
+
+                        # Determine which value to highlight
+                        value_to_show = pm25_val  # Default
+                        expected_range = expected_ranges['pm2_5']
 
                         anomalies.append({
                             "timestamp": str(row['time']),
                             "type": data_type,
                             "severity": severity,
-                            "anomaly_score": round(float(score), 3),
-                            "values": {
-                                "pm2_5": round(float(row['pm2_5']), 2),
-                                "pm10": round(float(row['pm10']), 2),
-                                "us_aqi": round(float(row['us_aqi']), 2),
-                                "ozone": round(float(row['ozone']), 2)
-                            },
-                            "description": f"Unusual {data_type} pattern detected"
+                            "value": round(value_to_show, 2),
+                            "expected_range": [round(expected_range[0], 1), round(expected_range[1], 1)],
+                            "description": description
                         })
+
+                note = "Anomaly detection using trained ML model"
+                if len(anomalies) == 0:
+                    note = "All recent data within normal ranges - no anomalies detected (✓ This is good!)"
 
                 return {
                     "data_type": data_type,
@@ -323,7 +366,9 @@ class MLPredictor:
                     "total_samples_analyzed": len(features),
                     "last_check": datetime.now().isoformat(),
                     "model": "Isolation Forest",
-                    "note": "Anomaly detection using trained ML model"
+                    "note": note,
+                    "trained_on_samples": len(training_features),
+                    "contamination_threshold": "5% (detects top 5% most unusual patterns)"
                 }
 
         except Exception as e:
@@ -359,7 +404,7 @@ class MLPredictor:
                     "type": "Random Forest Regression",
                     "status": "Active" if self.air_quality_model is not None else "Not trained",
                     "features": ["hour", "day_of_week", "month"],
-                    "targets": ["PM2.5", "PM10", "AQI"]
+                    "targets": ["PM2.5", "PM10", "AQI", "CO2"]
                 },
                 "energy_predictor": {
                     "loaded": True,
