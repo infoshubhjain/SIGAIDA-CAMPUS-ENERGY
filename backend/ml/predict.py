@@ -90,6 +90,7 @@ class MLPredictor:
             print(f"Error training models: {e}")
             self.models_trained = False
 
+
     def predict_air_quality(self, days: int = 7) -> List[Dict[str, Any]]:
         """
         Predict air quality for the next N days using trained ML model
