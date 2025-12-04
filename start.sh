@@ -24,6 +24,42 @@ kill_port() {
     sleep 1
 }
 
+# Check and install dependencies
+echo -e "${BLUE}Checking dependencies...${NC}"
+
+# Check frontend dependencies
+if [ ! -d "frontend/node_modules" ]; then
+    echo -e "${BLUE}📦 Installing frontend dependencies...${NC}"
+    cd frontend
+    if npm install --cache /tmp/npm-cache-sigaida; then
+        echo -e "${GREEN}✅ Frontend dependencies installed${NC}"
+    else
+        echo -e "${RED}❌ Failed to install frontend dependencies${NC}"
+        exit 1
+    fi
+    cd ..
+else
+    echo -e "${GREEN}✅ Frontend dependencies already installed${NC}"
+fi
+
+# Check backend dependencies
+echo -e "${BLUE}Checking backend dependencies...${NC}"
+if ! python3 -c "import fastapi, uvicorn" 2>/dev/null; then
+    echo -e "${BLUE}📦 Installing backend dependencies...${NC}"
+    cd backend
+    if pip3 install -r requirements.txt; then
+        echo -e "${GREEN}✅ Backend dependencies installed${NC}"
+    else
+        echo -e "${RED}❌ Failed to install backend dependencies${NC}"
+        exit 1
+    fi
+    cd ..
+else
+    echo -e "${GREEN}✅ Backend dependencies already installed${NC}"
+fi
+
+echo ""
+
 # Check and clean up ports if needed
 if check_port 8000; then
     kill_port 8000

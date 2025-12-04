@@ -22,7 +22,11 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(test:*)",
+      "Bash(timeout 10 npm run dev:*)",
+      "Bash(bash -n:*)",
+      "Bash([ -d \"frontend/node_modules\" ])"
     ],
     "deny": [],
     "ask": []

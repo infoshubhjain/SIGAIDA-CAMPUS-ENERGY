@@ -8,6 +8,46 @@ echo   SIGAIDA Campus Energy Application
 echo ========================================
 echo.
 
+REM Check and install dependencies
+echo Checking dependencies...
+echo.
+
+REM Check frontend dependencies
+if not exist "frontend\node_modules\" (
+    echo [Installing] Frontend dependencies...
+    cd frontend
+    call npm install
+    if errorlevel 1 (
+        echo [ERROR] Failed to install frontend dependencies
+        pause
+        exit /b 1
+    )
+    echo [SUCCESS] Frontend dependencies installed
+    cd ..
+) else (
+    echo [OK] Frontend dependencies already installed
+)
+
+REM Check backend dependencies
+echo [Checking] Backend dependencies...
+python -c "import fastapi, uvicorn" 2>nul
+if errorlevel 1 (
+    echo [Installing] Backend dependencies...
+    cd backend
+    pip3 install -r requirements.txt
+    if errorlevel 1 (
+        echo [ERROR] Failed to install backend dependencies
+        pause
+        exit /b 1
+    )
+    echo [SUCCESS] Backend dependencies installed
+    cd ..
+) else (
+    echo [OK] Backend dependencies already installed
+)
+
+echo.
+
 REM Check if ports are in use and kill if needed
 echo Checking ports...
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8000 ^| findstr LISTENING') do (
