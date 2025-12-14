@@ -10,7 +10,9 @@ A comprehensive full-stack application for collecting, analyzing, and visualizin
 
 **Mac/Linux:** `./start.sh` | **Windows:** Double-click `start.bat`
 
-📖 [**See detailed instructions →**](HOW_TO_RUN.md)
+📖 **[Complete Quick Start & Deployment Guide →](QUICK_START_GUIDE.md)**
+
+📋 [How to Run (Basic) →](HOW_TO_RUN.md)
 
 ---
 
