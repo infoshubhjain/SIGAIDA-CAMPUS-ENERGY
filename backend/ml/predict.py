@@ -179,7 +179,7 @@ class MLPredictor:
                 })
 
             return predictions
-        except:
+        except Exception:
             # Final fallback
             return [{
                 "date": (datetime.now() + timedelta(days=i)).strftime("%Y-%m-%d"),

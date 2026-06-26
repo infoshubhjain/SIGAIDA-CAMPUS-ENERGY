@@ -79,7 +79,7 @@ class DatabaseManager:
     def get_openaq_data(self, hours: int = 24) -> List[Dict[str, Any]]:
         """Get recent OpenAQ sensor data (PM2.5)"""
         query = """
-        SELECT value, parameter_name, datetime_utc as datetime FROM historical_aq_openaq
+        SELECT value, parameter_name as parameter, datetime_utc as datetime FROM historical_aq_openaq
         ORDER BY datetime_utc DESC
         LIMIT ?
         """

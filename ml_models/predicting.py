@@ -95,6 +95,7 @@ def predict_pm25():
     model = pm25_model(len(FEATURES))
     
     model.load_state_dict(torch.load("model1_pm25.pth"))
+    model.eval()
     last_seq = X_sequences[-1]  # shape (24, num_features)
     last_seq = torch.FloatTensor(last_seq).unsqueeze(0)  # shape (1, 24, num_features)
 
