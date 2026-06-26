@@ -1,9 +1,12 @@
 {
-  "devDependencies": {
-    "@types/react-plotly.js": "^2.6.3"
+  "name": "sigaida-backend",
+  "version": "1.0.0",
+  "description": "Backend API for SIGAIDA Campus Energy monitoring",
+  "type": "module",
+  "scripts": {
+    "dev": "python -m uvicorn main:app --reload",
+    "start": "python -m uvicorn main:app"
   },
-  "dependencies": {
-    "plotly.js": "^3.3.0",
-    "react-plotly.js": "^2.6.0"
-  }
+  "devDependencies": {},
+  "dependencies": {}
 }
