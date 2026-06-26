@@ -13,7 +13,7 @@ interface AirQualityChartProps {
 
 export function AirQualityChart({ data, pollutant = 'pm2_5' }: AirQualityChartProps) {
   const times = data.map((d) => d.time).reverse();
-  const values = data.map((d) => d[pollutant] || 0).reverse();
+  const values = data.map((d) => (d[pollutant as keyof AirQualityData] as number) || 0).reverse();
 
   return (
     <div className="w-full h-[400px]">

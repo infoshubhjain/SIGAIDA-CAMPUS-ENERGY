@@ -9,7 +9,7 @@ import torch.nn as nn
 #get last date
 def get_last_date():
     conn = sqlite3.connect("../data_collection/campus_data.db")
-    query = "SELECT MAX(timestamp) as last_date FROM air_quality_data"
+    query = "SELECT MAX(date) as last_date FROM historical_air_quality_data"
     df = pd.read_sql(query, conn)
     conn.close()
     
@@ -47,25 +47,17 @@ class pm25_model(nn.Module):
 def predict_pm25():
     conn = sqlite3.connect("../data_collection/campus_data.db")
 
-
     FEATURES = ['pm10', 'carbon_monoxide', 'nitrogen_dioxide', 'sulphur_dioxide', 'ozone', 'carbon_dioxide']
-    
-    latest_timestamp = pd.read_sql("SELECT MAX(timestamp) as latest FROM air_quality_data", conn)['latest'][0]
+
+    latest_timestamp = pd.read_sql("SELECT MAX(date) as latest FROM historical_air_quality_data", conn)['latest'][0]
     if latest_timestamp is None:
         raise ValueError("No data available in database")
     end_date = pd.to_datetime(latest_timestamp)
     start_date = end_date - pd.Timedelta(days=7)
-    
-    #end_date = pd.to_datetime(latest_timestamp)
-    #start_date = end_date - pd.Timedelta(days=7)
-
-    
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days = 7)
 
     query = f"""
-    SELECT timestamp, {', '.join(FEATURES)}, pm2_5
-    FROM air_quality_data
+    SELECT date as timestamp, {', '.join(FEATURES)}, pm2_5
+    FROM historical_air_quality_data
     WHERE timestamp >= '{start_date.strftime('%Y-%m-%d %H:%M:%S')}'
     ORDER BY timestamp ASC
     """

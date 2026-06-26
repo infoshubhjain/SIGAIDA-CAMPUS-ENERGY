@@ -14,6 +14,7 @@ class AirQualityData(BaseModel):
     pm2_5: Optional[float] = Field(None, description="PM2.5 concentration (μg/m³)")
     pm10: Optional[float] = Field(None, description="PM10 concentration (μg/m³)")
     carbon_monoxide: Optional[float] = Field(None, description="CO concentration (μg/m³)")
+    carbon_dioxide: Optional[float] = Field(None, description="CO2 concentration (ppm)")
     nitrogen_dioxide: Optional[float] = Field(None, description="NO2 concentration (μg/m³)")
     sulphur_dioxide: Optional[float] = Field(None, description="SO2 concentration (μg/m³)")
     ozone: Optional[float] = Field(None, description="O3 concentration (μg/m³)")

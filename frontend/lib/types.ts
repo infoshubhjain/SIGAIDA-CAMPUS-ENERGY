@@ -5,6 +5,7 @@ export interface AirQualityData {
   pm2_5?: number;
   pm10?: number;
   carbon_monoxide?: number;
+  carbon_dioxide?: number;
   nitrogen_dioxide?: number;
   sulphur_dioxide?: number;
   ozone?: number;
