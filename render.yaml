@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: sigaida-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_PATH
+        value: /app/data_collection/campus_data.db
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: ENVIRONMENT
+        value: production
+    healthCheckPath: /api/health
